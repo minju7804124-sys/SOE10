@@ -15,7 +15,7 @@
     .fallback{opacity:0;pointer-events:none;z-index:2}
     .page.ended .fallback{opacity:1}
     .page.ended .media{opacity:0}
-    .overlay{position:fixed;inset:0;z-index:9999;pointer-events:none}
+    .hotspot-layer{position:absolute;inset:0;z-index:5;pointer-events:none}
     .hotspot{position:absolute;display:block;background:transparent;pointer-events:auto;cursor:pointer;text-indent:-9999px;overflow:hidden}
     .hotspot:focus-visible{outline:1px solid rgba(255,255,255,.75);outline-offset:2px}
     @media (max-width:900px){html{scroll-snap-type:none}.page{min-height:auto;height:auto}.frame{width:100vw;height:calc(100vw * 9 / 16)}}
@@ -23,7 +23,6 @@
 </head>
 <body>
   <main id="app"></main>
-  <div class="overlay" id="overlay"></div>
 
   <script src="site-config.js"></script>
   <script>
@@ -44,38 +43,80 @@
       { num:"14" }
     ];
 
-    const TARGETS = {
-      home:"#page-1",
-      about:"#page-2",
-      film:"#page-3",
-      animation:"#page-4",
-      commercial:"#page-6",
-      works:"#page-9",
-      contact:"#page-13"
-    };
-
-    const MENU_RECTS = {
-      home:       {x:52.2,y:8.6,w:7.5,h:5.8},
-      about:      {x:59.7,y:8.6,w:8.2,h:5.8},
-      film:       {x:67.8,y:8.6,w:6.5,h:5.8},
-      animation:  {x:74.1,y:8.6,w:11.8,h:5.8},
-      commercial: {x:85.2,y:8.6,w:13.8,h:5.8},
-      works:      {x:89.8,y:8.6,w:8.0,h:5.8},
-      contact:    {x:97.5,y:8.6,w:9.5,h:5.8,alignRight:true}
-    };
+    const MENU_ITEMS = [
+      { key:"home", label:"HOME", selector:"#page-1", page:"1", rect:{ x:52.0, y:8.2, w:7.2, h:6.2 } },
+      { key:"about", label:"ABOUT", selector:"#page-2", page:"2", rect:{ x:59.4, y:8.2, w:7.0, h:6.2 } },
+      { key:"film", label:"FILM", selector:"#page-3", page:"3", rect:{ x:66.8, y:8.2, w:5.6, h:6.2 } },
+      { key:"animation", label:"ANIMATION", selector:"#page-4", page:"4", rect:{ x:72.7, y:8.2, w:9.7, h:6.2 } },
+      { key:"commercial", label:"COMMERCIAL", selector:"#page-6", page:"6", rect:{ x:82.8, y:8.2, w:8.0, h:6.2 } },
+      { key:"works", label:"WORKS", selector:"#page-9", page:"9", rect:{ x:91.1, y:8.2, w:4.4, h:6.2 } },
+      { key:"contact", label:"CONTACT", selector:"#page-13", page:"13", rect:{ x:95.8, y:8.2, w:4.0, h:6.2 } }
+    ];
 
     const WATCH_RECTS = {
-      "3": { x: 86.0, y: 52.0, w: 13.0, h: 7.5 },
-      "4": { x: 75.2, y: 80.0, w: 18.0, h: 8.5 },
-      "5": { x: 75.5, y: 77.6, w: 18.0, h: 8.5 },
-      "6": { x: 43.5, y: 77.2, w: 18.0, h: 8.5 },
-      "7": { x: 43.5, y: 77.2, w: 18.0, h: 8.5 },
-      "8": { x: 43.5, y: 77.2, w: 18.0, h: 8.5 },
-      "9": { x: 82.0, y: 82.0, w: 13.0, h: 6.5 }
+      "3": { x: 84.8, y: 50.8, w: 14.2, h: 9.0 },
+      "4": { x: 74.2, y: 78.4, w: 19.0, h: 9.0 },
+      "5": { x: 74.2, y: 76.0, w: 19.0, h: 9.0 },
+      "6": { x: 42.2, y: 75.7, w: 19.2, h: 9.0 },
+      "7": { x: 42.2, y: 75.7, w: 19.2, h: 9.0 },
+      "8": { x: 42.2, y: 75.7, w: 19.2, h: 9.0 },
+      "9": { x: 80.8, y: 80.7, w: 14.5, h: 7.6 }
     };
 
     function youtubeLink(key){
-      return (window.SOE_CONFIG && window.SOE_CONFIG.links && window.SOE_CONFIG.links[key]) || "https://www.youtube.com/";
+      const link = (window.SOE_CONFIG && window.SOE_CONFIG.links && window.SOE_CONFIG.links[key]) || "https://www.youtube.com/";
+      return /^https:\/\/(www\.)?(youtube\.com|youtu\.be)\//.test(link) ? link : "https://www.youtube.com/";
+    }
+
+    function createHotspot(rect, label, options = {}){
+      const hotspot = document.createElement("a");
+      hotspot.className = `hotspot ${options.className || ""}`.trim();
+      hotspot.href = options.href || "#";
+      hotspot.textContent = label;
+      hotspot.dataset.hotspotKind = options.kind || "menu";
+      hotspot.dataset.x = rect.x;
+      hotspot.dataset.y = rect.y;
+      hotspot.dataset.w = rect.w;
+      hotspot.dataset.h = rect.h;
+      if(options.navKey){ hotspot.dataset.navKey = options.navKey; }
+      if(options.targetSelector){ hotspot.dataset.targetSelector = options.targetSelector; }
+      if(options.targetPage){ hotspot.dataset.targetPage = options.targetPage; }
+      if(options.watchKey){ hotspot.dataset.watchKey = options.watchKey; }
+      if(options.externalUrl){
+        hotspot.dataset.externalUrl = options.externalUrl;
+        hotspot.target = "_blank";
+        hotspot.rel = "noopener noreferrer";
+      }
+      return hotspot;
+    }
+
+    function createHotspotLayer(page){
+      const layer = document.createElement("div");
+      layer.className = "hotspot-layer";
+      layer.dataset.page = page.num;
+
+      MENU_ITEMS.forEach(item => {
+        layer.appendChild(createHotspot(item.rect, item.label, {
+          className: "menu-hotspot",
+          href: item.selector,
+          kind: "menu",
+          navKey: item.key,
+          targetSelector: item.selector,
+          targetPage: item.page
+        }));
+      });
+
+      if(page.watch && WATCH_RECTS[page.num]){
+        layer.appendChild(createHotspot(WATCH_RECTS[page.num], "WATCH FILM", {
+          className: "watch-hotspot",
+          href: youtubeLink(page.watch),
+          kind: "watch",
+          watchKey: page.watch,
+          externalUrl: youtubeLink(page.watch)
+        }));
+      }
+
+      return layer;
     }
 
     const app = document.getElementById("app");
@@ -90,81 +131,83 @@
       </section>
     `).join("");
 
-    const overlay = document.getElementById("overlay");
-    function createHotspot(href, rect, label, newTab=false){
-      const a = document.createElement("a");
-      a.className = "hotspot";
-      a.href = href;
-      a.textContent = label;
-      if(newTab){ a.target = "_blank"; a.rel = "noopener noreferrer"; }
-      a.dataset.x = rect.x; a.dataset.y = rect.y; a.dataset.w = rect.w; a.dataset.h = rect.h; a.dataset.alignRight = rect.alignRight ? "1" : "0";
-      return a;
-    }
+    const pageEls = Array.from(document.querySelectorAll(".page"));
+    pageEls.forEach(pageEl => {
+      const pageData = PAGES.find(page => page.num === pageEl.dataset.num);
+      const frame = pageEl.querySelector(".frame");
+      frame.appendChild(createHotspotLayer(pageData));
+    });
 
-    function currentPageEl(){
-      let best = null, bestRatio = -1;
-      document.querySelectorAll('.page').forEach(p => {
-        const r = p.getBoundingClientRect();
-        const vh = window.innerHeight;
-        const visible = Math.max(0, Math.min(r.bottom, vh) - Math.max(r.top, 0));
-        const ratio = visible / Math.max(1, Math.min(vh, r.height));
-        if(ratio > bestRatio){ bestRatio = ratio; best = p; }
-      });
-      return best || document.querySelector('.page');
-    }
+    function mediaBox(frame){
+      const fw = frame.clientWidth;
+      const fh = frame.clientHeight;
+      const mediaRatio = 16 / 9;
+      const frameRatio = fw / fh;
+      let width;
+      let height;
+      let offsetX;
+      let offsetY;
 
-    function layoutOverlay(pageEl){
-      const frame = pageEl.querySelector('.frame');
-      const fw = frame.clientWidth, fh = frame.clientHeight;
-      const mediaRatio = 16/9, frameRatio = fw/fh;
-      let rw, rh, rx, ry;
-      if(frameRatio > mediaRatio){ rh = fh; rw = rh * mediaRatio; rx = (fw - rw) / 2; ry = 0; }
-      else { rw = fw; rh = rw / mediaRatio; rx = 0; ry = (fh - rh) / 2; }
-      const rect = frame.getBoundingClientRect();
-
-      overlay.querySelectorAll('.hotspot').forEach(el => {
-        const x = parseFloat(el.dataset.x), y = parseFloat(el.dataset.y), w = parseFloat(el.dataset.w), h = parseFloat(el.dataset.h);
-        const alignRight = el.dataset.alignRight === "1";
-        const pxW = rw * (w / 100), pxH = rh * (h / 100);
-        let pxX = rect.left + rx + rw * (x / 100);
-        const pxY = rect.top + ry + rh * (y / 100);
-        if(alignRight){ pxX = rect.left + rx + rw - pxW; }
-        el.style.left = pxX + "px";
-        el.style.top = pxY + "px";
-        el.style.width = pxW + "px";
-        el.style.height = pxH + "px";
-      });
-    }
-
-    function rebuildOverlay(){
-      const pageEl = currentPageEl();
-      if(!pageEl) return;
-      const num = pageEl.dataset.num;
-      overlay.innerHTML = "";
-      overlay.appendChild(createHotspot(TARGETS.home, MENU_RECTS.home, "HOME"));
-      overlay.appendChild(createHotspot(TARGETS.about, MENU_RECTS.about, "ABOUT"));
-      overlay.appendChild(createHotspot(TARGETS.film, MENU_RECTS.film, "FILM"));
-      overlay.appendChild(createHotspot(TARGETS.animation, MENU_RECTS.animation, "ANIMATION"));
-      overlay.appendChild(createHotspot(TARGETS.commercial, MENU_RECTS.commercial, "COMMERCIAL"));
-      overlay.appendChild(createHotspot(TARGETS.works, MENU_RECTS.works, "WORKS"));
-      overlay.appendChild(createHotspot(TARGETS.contact, MENU_RECTS.contact, "CONTACT"));
-
-      const pageData = PAGES.find(p => p.num === num);
-      if(pageData && pageData.watch && WATCH_RECTS[num]){
-        overlay.appendChild(createHotspot(youtubeLink(pageData.watch), WATCH_RECTS[num], "WATCH FILM", true));
+      if(frameRatio > mediaRatio){
+        height = fh;
+        width = height * mediaRatio;
+        offsetX = (fw - width) / 2;
+        offsetY = 0;
+      } else {
+        width = fw;
+        height = width / mediaRatio;
+        offsetX = 0;
+        offsetY = (fh - height) / 2;
       }
-      layoutOverlay(pageEl);
+
+      return { width, height, offsetX, offsetY };
     }
 
-    let rafId = null;
-    function scheduleOverlay(){
-      cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(rebuildOverlay);
+    function positionLayerHotspots(layer){
+      const frame = layer.parentElement;
+      const box = mediaBox(frame);
+      layer.querySelectorAll('.hotspot').forEach(hotspot => {
+        const x = parseFloat(hotspot.dataset.x);
+        const y = parseFloat(hotspot.dataset.y);
+        const w = parseFloat(hotspot.dataset.w);
+        const h = parseFloat(hotspot.dataset.h);
+        hotspot.style.left = `${box.offsetX + (box.width * x / 100)}px`;
+        hotspot.style.top = `${box.offsetY + (box.height * y / 100)}px`;
+        hotspot.style.width = `${box.width * w / 100}px`;
+        hotspot.style.height = `${box.height * h / 100}px`;
+      });
     }
 
-    window.addEventListener('load', scheduleOverlay);
-    window.addEventListener('resize', scheduleOverlay);
-    window.addEventListener('scroll', scheduleOverlay, { passive: true });
+    function positionAllHotspots(){
+      document.querySelectorAll('.hotspot-layer').forEach(positionLayerHotspots);
+    }
+
+    function goToTarget(selector, targetPage){
+      const target = document.querySelector(selector);
+      if(!target) return;
+      history.replaceState(null, '', `#page-${targetPage}`);
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    document.addEventListener('click', (event) => {
+      const hotspot = event.target.closest('.hotspot');
+      if(!hotspot) return;
+
+      if(hotspot.dataset.hotspotKind === 'menu'){
+        event.preventDefault();
+        goToTarget(hotspot.dataset.targetSelector, hotspot.dataset.targetPage);
+        return;
+      }
+
+      if(hotspot.dataset.hotspotKind === 'watch'){
+        event.preventDefault();
+        const externalUrl = hotspot.dataset.externalUrl || 'https://www.youtube.com/';
+        window.open(externalUrl, '_blank', 'noopener');
+      }
+    });
+
+    window.addEventListener('load', positionAllHotspots);
+    window.addEventListener('resize', positionAllHotspots);
 
     const videos = Array.from(document.querySelectorAll('.media'));
     function resetAndPlay(video){
@@ -172,8 +215,8 @@
       if(!page) return;
       page.classList.remove('ended');
       try { video.currentTime = 0; } catch(e) {}
-      const p = video.play();
-      if(p && typeof p.catch === 'function') p.catch(() => {});
+      const playAttempt = video.play();
+      if(playAttempt && typeof playAttempt.catch === 'function') playAttempt.catch(() => {});
     }
     function stopVideo(video){ video.pause(); }
 
@@ -182,7 +225,7 @@
       if(!page) return;
       video.addEventListener('ended', () => page.classList.add('ended'));
       video.addEventListener('error', () => page.classList.add('ended'));
-      video.addEventListener('loadedmetadata', scheduleOverlay);
+      video.addEventListener('loadedmetadata', positionAllHotspots);
     });
 
     const observer = new IntersectionObserver((entries) => {
@@ -191,10 +234,9 @@
         if(entry.isIntersecting) resetAndPlay(video);
         else stopVideo(video);
       });
-      scheduleOverlay();
     }, { threshold: 0.65 });
 
-    videos.forEach(v => observer.observe(v));
+    videos.forEach(video => observer.observe(video));
   </script>
 </body>
 </html>
