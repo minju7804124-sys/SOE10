@@ -8,20 +8,29 @@
     *{box-sizing:border-box}
     html{scroll-behavior:smooth;scroll-snap-type:y mandatory;background:#000}
     body{margin:0;background:#000;color:#fff;overflow-x:hidden;font-family:Arial,Helvetica,sans-serif}
-    a{text-decoration:none;color:inherit}
+    button{font:inherit}
+    .site-nav{position:fixed;top:26px;right:32px;z-index:30;display:flex;align-items:center;gap:8px}
+    .nav-button{border:1px solid rgba(255,255,255,.45);background:rgba(0,0,0,.22);color:#fff;padding:8px 11px;min-height:40px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;text-transform:uppercase;letter-spacing:.08em;font-size:12px;line-height:1;backdrop-filter:blur(4px)}
+    .nav-button:hover,.nav-button:focus-visible{background:rgba(255,255,255,.16);outline:1px solid rgba(255,255,255,.7);outline-offset:2px}
     .page{position:relative;width:100%;height:100vh;min-height:100vh;background:#000;display:flex;align-items:center;justify-content:center;scroll-snap-align:start;scroll-snap-stop:always;overflow:hidden}
     .frame{position:relative;width:100vw;height:100vh;background:#000;overflow:hidden}
     .media,.fallback{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;display:block}
     .fallback{opacity:0;pointer-events:none;z-index:2}
     .page.ended .fallback{opacity:1}
     .page.ended .media{opacity:0}
-    .hotspot-layer{position:absolute;inset:0;z-index:5;pointer-events:none}
-    .hotspot{position:absolute;display:block;background:transparent;pointer-events:auto;cursor:pointer;text-indent:-9999px;overflow:hidden}
-    .hotspot:focus-visible{outline:1px solid rgba(255,255,255,.75);outline-offset:2px}
-    @media (max-width:900px){html{scroll-snap-type:none}.page{min-height:auto;height:auto}.frame{width:100vw;height:calc(100vw * 9 / 16)}}
+    .page-ui{position:absolute;inset:0;z-index:10;pointer-events:none}
+    .watch-film-button{position:absolute;pointer-events:auto;border:1px solid rgba(255,255,255,.55);background:rgba(0,0,0,.30);color:#fff;padding:12px 18px;min-width:180px;min-height:52px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;text-transform:uppercase;letter-spacing:.12em;font-size:14px;line-height:1;backdrop-filter:blur(4px)}
+    .watch-film-button:hover,.watch-film-button:focus-visible{background:rgba(255,255,255,.16);outline:1px solid rgba(255,255,255,.75);outline-offset:2px}
+    .watch-page-3{top:50.5%;right:2.8%}
+    .watch-page-4,.watch-page-5{right:6.5%;bottom:9.5%}
+    .watch-page-6,.watch-page-7,.watch-page-8{left:42.5%;bottom:9.5%}
+    .watch-page-9{right:4.8%;bottom:8.2%}
+    @media (max-width:1200px){.site-nav{top:16px;right:16px;gap:6px;flex-wrap:wrap;max-width:calc(100vw - 32px);justify-content:flex-end}.nav-button{font-size:11px;padding:7px 9px;min-height:36px}.watch-film-button{min-width:150px;min-height:46px;font-size:12px;padding:10px 14px}}
+    @media (max-width:900px){html{scroll-snap-type:none}.page{min-height:auto;height:auto}.frame{width:100vw;height:calc(100vw * 9 / 16)}.site-nav{position:sticky;top:0;left:0;right:0;z-index:30;padding:10px 12px;background:rgba(0,0,0,.72)}.watch-film-button{min-width:132px;min-height:42px;padding:8px 12px}}
   </style>
 </head>
 <body>
+  <nav class="site-nav" id="site-nav" aria-label="Portfolio sections"></nav>
   <main id="app"></main>
 
   <script src="site-config.js"></script>
@@ -29,13 +38,13 @@
     const PAGES = [
       { num:"1" },
       { num:"2" },
-      { num:"3", watch:"film1" },
-      { num:"4", watch:"animation1" },
-      { num:"5", watch:"animation2" },
-      { num:"6", watch:"commercial1" },
-      { num:"7", watch:"commercial2" },
-      { num:"8", watch:"commercial3" },
-      { num:"9", watch:"works1" },
+      { num:"3", watch:"film1", watchClass:"watch-page-3" },
+      { num:"4", watch:"animation1", watchClass:"watch-page-4" },
+      { num:"5", watch:"animation2", watchClass:"watch-page-5" },
+      { num:"6", watch:"commercial1", watchClass:"watch-page-6" },
+      { num:"7", watch:"commercial2", watchClass:"watch-page-7" },
+      { num:"8", watch:"commercial3", watchClass:"watch-page-8" },
+      { num:"9", watch:"works1", watchClass:"watch-page-9" },
       { num:"10" },
       { num:"11" },
       { num:"12" },
@@ -43,171 +52,88 @@
       { num:"14" }
     ];
 
-    const MENU_ITEMS = [
-      { key:"home", label:"HOME", selector:"#page-1", page:"1", rect:{ x:52.0, y:8.2, w:7.2, h:6.2 } },
-      { key:"about", label:"ABOUT", selector:"#page-2", page:"2", rect:{ x:59.4, y:8.2, w:7.0, h:6.2 } },
-      { key:"film", label:"FILM", selector:"#page-3", page:"3", rect:{ x:66.8, y:8.2, w:5.6, h:6.2 } },
-      { key:"animation", label:"ANIMATION", selector:"#page-4", page:"4", rect:{ x:72.7, y:8.2, w:9.7, h:6.2 } },
-      { key:"commercial", label:"COMMERCIAL", selector:"#page-6", page:"6", rect:{ x:82.8, y:8.2, w:8.0, h:6.2 } },
-      { key:"works", label:"WORKS", selector:"#page-9", page:"9", rect:{ x:91.1, y:8.2, w:4.4, h:6.2 } },
-      { key:"contact", label:"CONTACT", selector:"#page-13", page:"13", rect:{ x:95.8, y:8.2, w:4.0, h:6.2 } }
+    const NAV_ITEMS = [
+      { key:"home", label:"HOME", targetId:"page-1", targetPage:"1" },
+      { key:"about", label:"ABOUT", targetId:"page-2", targetPage:"2" },
+      { key:"film", label:"FILM", targetId:"page-3", targetPage:"3" },
+      { key:"animation", label:"ANIMATION", targetId:"page-4", targetPage:"4" },
+      { key:"commercial", label:"COMMERCIAL", targetId:"page-6", targetPage:"6" },
+      { key:"works", label:"WORKS", targetId:"page-9", targetPage:"9" },
+      { key:"contact", label:"CONTACT", targetId:"page-13", targetPage:"13" }
     ];
-
-    const WATCH_RECTS = {
-      "3": { x: 84.8, y: 50.8, w: 14.2, h: 9.0 },
-      "4": { x: 74.2, y: 78.4, w: 19.0, h: 9.0 },
-      "5": { x: 74.2, y: 76.0, w: 19.0, h: 9.0 },
-      "6": { x: 42.2, y: 75.7, w: 19.2, h: 9.0 },
-      "7": { x: 42.2, y: 75.7, w: 19.2, h: 9.0 },
-      "8": { x: 42.2, y: 75.7, w: 19.2, h: 9.0 },
-      "9": { x: 80.8, y: 80.7, w: 14.5, h: 7.6 }
-    };
 
     function youtubeLink(key){
       const link = (window.SOE_CONFIG && window.SOE_CONFIG.links && window.SOE_CONFIG.links[key]) || "https://www.youtube.com/";
       return /^https:\/\/(www\.)?(youtube\.com|youtu\.be)\//.test(link) ? link : "https://www.youtube.com/";
     }
 
-    function createHotspot(rect, label, options = {}){
-      const hotspot = document.createElement("a");
-      hotspot.className = `hotspot ${options.className || ""}`.trim();
-      hotspot.href = options.href || "#";
-      hotspot.textContent = label;
-      hotspot.dataset.hotspotKind = options.kind || "menu";
-      hotspot.dataset.x = rect.x;
-      hotspot.dataset.y = rect.y;
-      hotspot.dataset.w = rect.w;
-      hotspot.dataset.h = rect.h;
-      if(options.navKey){ hotspot.dataset.navKey = options.navKey; }
-      if(options.targetSelector){ hotspot.dataset.targetSelector = options.targetSelector; }
-      if(options.targetPage){ hotspot.dataset.targetPage = options.targetPage; }
-      if(options.watchKey){ hotspot.dataset.watchKey = options.watchKey; }
-      if(options.externalUrl){
-        hotspot.dataset.externalUrl = options.externalUrl;
-        hotspot.target = "_blank";
-        hotspot.rel = "noopener noreferrer";
-      }
-      return hotspot;
+    function renderNavigation(){
+      const nav = document.getElementById('site-nav');
+      nav.innerHTML = NAV_ITEMS.map(item => `
+        <button
+          type="button"
+          class="nav-button"
+          data-nav-key="${item.key}"
+          data-target-id="${item.targetId}"
+          data-target-page="${item.targetPage}"
+        >${item.label}</button>
+      `).join('');
     }
 
-    function createHotspotLayer(page){
-      const layer = document.createElement("div");
-      layer.className = "hotspot-layer";
-      layer.dataset.page = page.num;
-
-      MENU_ITEMS.forEach(item => {
-        layer.appendChild(createHotspot(item.rect, item.label, {
-          className: "menu-hotspot",
-          href: item.selector,
-          kind: "menu",
-          navKey: item.key,
-          targetSelector: item.selector,
-          targetPage: item.page
-        }));
-      });
-
-      if(page.watch && WATCH_RECTS[page.num]){
-        layer.appendChild(createHotspot(WATCH_RECTS[page.num], "WATCH FILM", {
-          className: "watch-hotspot",
-          href: youtubeLink(page.watch),
-          kind: "watch",
-          watchKey: page.watch,
-          externalUrl: youtubeLink(page.watch)
-        }));
-      }
-
-      return layer;
-    }
-
-    const app = document.getElementById("app");
-    app.innerHTML = PAGES.map(page => `
-      <section class="page" id="page-${page.num}" data-num="${page.num}">
-        <div class="frame">
-          <video class="media" playsinline muted preload="metadata" poster="assets/${page.num}.jpg">
-            <source src="assets/${page.num}.mp4" type="video/mp4">
-          </video>
-          <img class="fallback" src="assets/${page.num}-end.jpg" alt="" aria-hidden="true">
+    function watchButtonMarkup(page){
+      if(!page.watch) return '';
+      return `
+        <div class="page-ui">
+          <button
+            type="button"
+            class="watch-film-button ${page.watchClass || ''}"
+            data-watch-key="${page.watch}"
+            data-watch-url="${youtubeLink(page.watch)}"
+          >WATCH FILM</button>
         </div>
-      </section>
-    `).join("");
-
-    const pageEls = Array.from(document.querySelectorAll(".page"));
-    pageEls.forEach(pageEl => {
-      const pageData = PAGES.find(page => page.num === pageEl.dataset.num);
-      const frame = pageEl.querySelector(".frame");
-      frame.appendChild(createHotspotLayer(pageData));
-    });
-
-    function mediaBox(frame){
-      const fw = frame.clientWidth;
-      const fh = frame.clientHeight;
-      const mediaRatio = 16 / 9;
-      const frameRatio = fw / fh;
-      let width;
-      let height;
-      let offsetX;
-      let offsetY;
-
-      if(frameRatio > mediaRatio){
-        height = fh;
-        width = height * mediaRatio;
-        offsetX = (fw - width) / 2;
-        offsetY = 0;
-      } else {
-        width = fw;
-        height = width / mediaRatio;
-        offsetX = 0;
-        offsetY = (fh - height) / 2;
-      }
-
-      return { width, height, offsetX, offsetY };
+      `;
     }
 
-    function positionLayerHotspots(layer){
-      const frame = layer.parentElement;
-      const box = mediaBox(frame);
-      layer.querySelectorAll('.hotspot').forEach(hotspot => {
-        const x = parseFloat(hotspot.dataset.x);
-        const y = parseFloat(hotspot.dataset.y);
-        const w = parseFloat(hotspot.dataset.w);
-        const h = parseFloat(hotspot.dataset.h);
-        hotspot.style.left = `${box.offsetX + (box.width * x / 100)}px`;
-        hotspot.style.top = `${box.offsetY + (box.height * y / 100)}px`;
-        hotspot.style.width = `${box.width * w / 100}px`;
-        hotspot.style.height = `${box.height * h / 100}px`;
-      });
+    function renderPages(){
+      const app = document.getElementById('app');
+      app.innerHTML = PAGES.map(page => `
+        <section class="page" id="page-${page.num}" data-page="${page.num}">
+          <div class="frame">
+            <video class="media" playsinline muted preload="metadata" poster="assets/${page.num}.jpg">
+              <source src="assets/${page.num}.mp4" type="video/mp4">
+            </video>
+            <img class="fallback" src="assets/${page.num}-end.jpg" alt="" aria-hidden="true">
+            ${watchButtonMarkup(page)}
+          </div>
+        </section>
+      `).join('');
     }
 
-    function positionAllHotspots(){
-      document.querySelectorAll('.hotspot-layer').forEach(positionLayerHotspots);
-    }
-
-    function goToTarget(selector, targetPage){
-      const target = document.querySelector(selector);
+    function goToPage(targetId, targetPage){
+      const target = document.getElementById(targetId);
       if(!target) return;
       history.replaceState(null, '', `#page-${targetPage}`);
       target.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
-    document.addEventListener('click', (event) => {
-      const hotspot = event.target.closest('.hotspot');
-      if(!hotspot) return;
+    renderNavigation();
+    renderPages();
 
-      if(hotspot.dataset.hotspotKind === 'menu'){
+    document.addEventListener('click', (event) => {
+      const navButton = event.target.closest('.nav-button');
+      if(navButton){
         event.preventDefault();
-        goToTarget(hotspot.dataset.targetSelector, hotspot.dataset.targetPage);
+        goToPage(navButton.dataset.targetId, navButton.dataset.targetPage);
         return;
       }
 
-      if(hotspot.dataset.hotspotKind === 'watch'){
+      const watchButton = event.target.closest('.watch-film-button');
+      if(watchButton){
         event.preventDefault();
-        const externalUrl = hotspot.dataset.externalUrl || 'https://www.youtube.com/';
-        window.open(externalUrl, '_blank', 'noopener');
+        const url = watchButton.dataset.watchUrl || 'https://www.youtube.com/';
+        window.open(url, '_blank', 'noopener,noreferrer');
       }
     });
-
-    window.addEventListener('load', positionAllHotspots);
-    window.addEventListener('resize', positionAllHotspots);
 
     const videos = Array.from(document.querySelectorAll('.media'));
     function resetAndPlay(video){
@@ -225,7 +151,6 @@
       if(!page) return;
       video.addEventListener('ended', () => page.classList.add('ended'));
       video.addEventListener('error', () => page.classList.add('ended'));
-      video.addEventListener('loadedmetadata', positionAllHotspots);
     });
 
     const observer = new IntersectionObserver((entries) => {
