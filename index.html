@@ -55,13 +55,13 @@
     };
 
     const MENU_RECTS = {
-      home:       {x:52.2,y:8.6,w:7.5,h:5.8},
-      about:      {x:59.7,y:8.6,w:8.2,h:5.8},
-      film:       {x:67.8,y:8.6,w:6.5,h:5.8},
-      animation:  {x:74.1,y:8.6,w:11.8,h:5.8},
-      commercial: {x:85.2,y:8.6,w:13.8,h:5.8},
-      works:      {x:89.8,y:8.6,w:8.0,h:5.8},
-      contact:    {x:97.5,y:8.6,w:9.5,h:5.8,alignRight:true}
+      home:       {x:52.0,y:8.6,w:7.0,h:5.8},
+      about:      {x:59.3,y:8.6,w:7.0,h:5.8},
+      film:       {x:66.7,y:8.6,w:5.7,h:5.8},
+      animation:  {x:72.7,y:8.6,w:9.8,h:5.8},
+      commercial: {x:82.8,y:8.6,w:8.2,h:5.8},
+      works:      {x:91.4,y:8.6,w:4.8,h:5.8},
+      contact:    {x:96.4,y:8.6,w:3.3,h:5.8}
     };
 
     const WATCH_RECTS = {
@@ -75,7 +75,8 @@
     };
 
     function youtubeLink(key){
-      return (window.SOE_CONFIG && window.SOE_CONFIG.links && window.SOE_CONFIG.links[key]) || "https://www.youtube.com/";
+      const link = (window.SOE_CONFIG && window.SOE_CONFIG.links && window.SOE_CONFIG.links[key]) || "https://www.youtube.com/";
+      return /^https:\/\/(www\.)?(youtube\.com|youtu\.be)\//.test(link) ? link : "https://www.youtube.com/";
     }
 
     const app = document.getElementById("app");
@@ -91,12 +92,13 @@
     `).join("");
 
     const overlay = document.getElementById("overlay");
-    function createHotspot(href, rect, label, newTab=false){
+    function createHotspot(href, rect, label, options = {}){
       const a = document.createElement("a");
       a.className = "hotspot";
       a.href = href;
       a.textContent = label;
-      if(newTab){ a.target = "_blank"; a.rel = "noopener noreferrer"; }
+      if(options.newTab){ a.target = "_blank"; a.rel = "noopener noreferrer"; }
+      if(options.targetPage){ a.dataset.targetPage = options.targetPage; }
       a.dataset.x = rect.x; a.dataset.y = rect.y; a.dataset.w = rect.w; a.dataset.h = rect.h; a.dataset.alignRight = rect.alignRight ? "1" : "0";
       return a;
     }
@@ -141,20 +143,33 @@
       if(!pageEl) return;
       const num = pageEl.dataset.num;
       overlay.innerHTML = "";
-      overlay.appendChild(createHotspot(TARGETS.home, MENU_RECTS.home, "HOME"));
-      overlay.appendChild(createHotspot(TARGETS.about, MENU_RECTS.about, "ABOUT"));
-      overlay.appendChild(createHotspot(TARGETS.film, MENU_RECTS.film, "FILM"));
-      overlay.appendChild(createHotspot(TARGETS.animation, MENU_RECTS.animation, "ANIMATION"));
-      overlay.appendChild(createHotspot(TARGETS.commercial, MENU_RECTS.commercial, "COMMERCIAL"));
-      overlay.appendChild(createHotspot(TARGETS.works, MENU_RECTS.works, "WORKS"));
-      overlay.appendChild(createHotspot(TARGETS.contact, MENU_RECTS.contact, "CONTACT"));
+      overlay.appendChild(createHotspot(TARGETS.home, MENU_RECTS.home, "HOME", { targetPage: "page-1" }));
+      overlay.appendChild(createHotspot(TARGETS.about, MENU_RECTS.about, "ABOUT", { targetPage: "page-2" }));
+      overlay.appendChild(createHotspot(TARGETS.film, MENU_RECTS.film, "FILM", { targetPage: "page-3" }));
+      overlay.appendChild(createHotspot(TARGETS.animation, MENU_RECTS.animation, "ANIMATION", { targetPage: "page-4" }));
+      overlay.appendChild(createHotspot(TARGETS.commercial, MENU_RECTS.commercial, "COMMERCIAL", { targetPage: "page-6" }));
+      overlay.appendChild(createHotspot(TARGETS.works, MENU_RECTS.works, "WORKS", { targetPage: "page-9" }));
+      overlay.appendChild(createHotspot(TARGETS.contact, MENU_RECTS.contact, "CONTACT", { targetPage: "page-13" }));
 
       const pageData = PAGES.find(p => p.num === num);
       if(pageData && pageData.watch && WATCH_RECTS[num]){
-        overlay.appendChild(createHotspot(youtubeLink(pageData.watch), WATCH_RECTS[num], "WATCH FILM", true));
+        overlay.appendChild(createHotspot(youtubeLink(pageData.watch), WATCH_RECTS[num], "WATCH FILM", { newTab: true }));
       }
       layoutOverlay(pageEl);
     }
+
+
+    overlay.addEventListener('click', (event) => {
+      const hotspot = event.target.closest('.hotspot');
+      if(!hotspot) return;
+      const targetPage = hotspot.dataset.targetPage;
+      if(!targetPage) return;
+      event.preventDefault();
+      const targetEl = document.getElementById(targetPage);
+      if(!targetEl) return;
+      history.replaceState(null, '', `#${targetPage}`);
+      targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
 
     let rafId = null;
     function scheduleOverlay(){
